@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: webIA
+  datasource:
+    url: jdbc:postgresql://aws-0-sa-east-1.pooler.supabase.com:6543/postgres?user=postgres.naieaiwmhfzitjqhaxlt&prepareThreshold=0
+    username: postgres.naieaiwmhfzitjqhaxlt
+    password: 99225547Pa?
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 500
+        order_inserts: true
+
+zapi:
+  instance-id: 3F6E31ADF5528100EF225EAFFE86824A
+  token: CA53753DFDD1F222B3581141
+  client-token: F9d0dd0f8732b48c5be27a0ddf8b4c8bcS
+
+groq:
+  api-key: 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
+  model: llama-3.3-70b-versatile

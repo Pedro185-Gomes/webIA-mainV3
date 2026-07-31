@@ -1,0 +1,12 @@
+package com.example.webIA.Model;
+
+public enum StatusAtendimento {
+
+    NOVO_CONTATO,
+    INTERESSE_IDENTIFICADO,
+    ORCAMENTO_EM_ANDAMENTO,
+    ORCAMENTO_ENVIADO,
+    AGUARDANDO_VENDEDOR,
+    FECHADO_GANHO,
+    SEM_INTERESSE
+}

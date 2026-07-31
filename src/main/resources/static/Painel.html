@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Painel de Atendimentos — Supre</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --accent:    #f97316;   /* era #3b82f6 (azul) → vira laranja */
+            --bg:        #ffffff;   /* era #0f1117 (preto) → vira branco */
+            --surface:   #fff7ed;   /* era #1a1d27 → fundo levemente alaranjado */
+            --card:      #ffedd5;   /* era #21253a → card laranja claro */
+            --border:    #fed7aa;   /* era #2e3348 → borda laranja suave */
+            --text:      #1c1917;   /* era #e5e7eb → texto escuro */
+            --subtext:   #78716c;   /* era #9ca3af → subtexto marrom */
+            --muted:     #a8a29e;   /* era #6b7280 */
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 28px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text);
+        }
+        .logo span { color: var(--accent); }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .badge-total {
+            font-size: 12px;
+            color: var(--subtext);
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+        .btn-refresh {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity .15s;
+        }
+        .btn-refresh:hover { opacity: .85; }
+
+        /* BOARD */
+        .board-wrapper {
+            padding: 24px 20px;
+            overflow-x: auto;
+        }
+        .board {
+            display: flex;
+            gap: 14px;
+            min-width: max-content;
+            align-items: flex-start;
+        }
+
+        /* COLUMN */
+        .col {
+            width: 260px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .col-header {
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+        .col-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .col-count {
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 2px 7px;
+            border-radius: 999px;
+            color: var(--subtext);
+        }
+        .col-body {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 80px;
+        }
+
+        /* CARD */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: border-color .15s, transform .1s;
+            position: relative;
+        }
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+        .card-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-phone {
+            font-size: 11px;
+            color: var(--subtext);
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
+        .card-msg {
+            font-size: 12px;
+            color: var(--subtext);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-time {
+            font-size: 10px;
+            color: var(--muted);
+        }
+        .card-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .btn-status {
+            font-size: 10px;
+            padding: 3px 7px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--subtext);
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .btn-status:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* STATUS COLORS */
+        .dot-novo       { background: var(--accent); }
+        .dot-interesse  { background: var(--yellow); }
+        .dot-andamento  { background: var(--orange); }
+        .dot-enviado    { background: var(--purple); }
+        .dot-vendedor   { background: var(--red); }
+        .dot-ganho      { background: var(--green); }
+        .dot-sem        { background: var(--muted); }
+
+        /* EMPTY */
+        .col-empty {
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+            padding: 20px 10px;
+        }
+
+        /* LOADING */
+        .loading {
+            text-align: center;
+            color: var(--subtext);
+            font-size: 14px;
+            padding: 60px 0;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.6);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            width: 420px;
+            max-width: 95vw;
+        }
+        .modal h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .modal-field {
+            margin-bottom: 12px;
+        }
+        .modal-field label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--subtext);
+            margin-bottom: 5px;
+        }
+        .modal-field p {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+        .modal-select {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .btn-cancel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--subtext);
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-save {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">Supre <span>IA</span> — Atendimentos</div>
+    <div class="header-right">
+        <span class="badge-total" id="badge-total">Carregando...</span>
+        <button class="btn-refresh" onclick="carregar()">↻ Atualizar</button>
+    </div>
+</header>
+
+<div class="board-wrapper">
+    <div class="board" id="board">
+        <div class="loading">Carregando atendimentos...</div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h3 id="modal-nome">Atendimento</h3>
+        <div class="modal-field">
+            <label>Telefone</label>
+            <p id="modal-phone">—</p>
+        </div>
+        <div class="modal-field">
+            <label>Última mensagem</label>
+            <p id="modal-msg">—</p>
+        </div>
+        <div class="modal-field">
+            <label>Última atualização</label>
+            <p id="modal-data">—</p>
+        </div>
+        <div class="modal-field">
+            <label>Alterar status</label>
+            <select class="modal-select" id="modal-status">
+                <option value="NOVO_CONTATO">Novo Contato</option>
+                <option value="INTERESSE_IDENTIFICADO">Interesse Identificado</option>
+                <option value="ORCAMENTO_EM_ANDAMENTO">Orçamento em Andamento</option>
+                <option value="ORCAMENTO_ENVIADO">Orçamento Enviado</option>
+                <option value="AGUARDANDO_VENDEDOR">Aguardando Vendedor</option>
+                <option value="FECHADO_GANHO">Fechado / Ganho</option>
+                <option value="SEM_INTERESSE">Sem Interesse</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+            <button class="btn-save" onclick="salvarStatus()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '';
+    let atendimentoAtual = null;
+
+    const COLUNAS = [
+        { status: 'NOVO_CONTATO',           label: 'Novo Contato',           dot: 'dot-novo' },
+        { status: 'INTERESSE_IDENTIFICADO', label: 'Interesse Identificado', dot: 'dot-interesse' },
+        { status: 'ORCAMENTO_EM_ANDAMENTO', label: 'Orçamento em Andamento', dot: 'dot-andamento' },
+        { status: 'ORCAMENTO_ENVIADO',      label: 'Orçamento Enviado',      dot: 'dot-enviado' },
+        { status: 'AGUARDANDO_VENDEDOR',    label: 'Aguardando Vendedor',    dot: 'dot-vendedor' },
+        { status: 'FECHADO_GANHO',          label: 'Fechado / Ganho',        dot: 'dot-ganho' },
+        { status: 'SEM_INTERESSE',          label: 'Sem Interesse',          dot: 'dot-sem' },
+    ];
+
+    function formatarData(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function formatarPhone(phone) {
+        if (!phone) return '—';
+        const n = phone.replace(/\D/g, '');
+        if (n.length === 13) return `+${n.slice(0,2)} (${n.slice(2,4)}) ${n.slice(4,9)}-${n.slice(9)}`;
+        return phone;
+    }
+
+    async function carregar() {
+        const board = document.getElementById('board');
+        board.innerHTML = '<div class="loading">Carregando...</div>';
+
+        try {
+            const res = await fetch(`${API}/atendimentos`);
+            const lista = await res.json();
+
+            document.getElementById('badge-total').textContent = `${lista.length} atendimentos`;
+
+            const grupos = {};
+            COLUNAS.forEach(c => grupos[c.status] = []);
+            lista.forEach(a => {
+                if (grupos[a.status] !== undefined) grupos[a.status].push(a);
+            });
+
+            board.innerHTML = '';
+            COLUNAS.forEach(col => {
+                const items = grupos[col.status];
+                const colEl = document.createElement('div');
+                colEl.className = 'col';
+                colEl.innerHTML = `
+          <div class="col-header">
+            <div class="col-label">
+              <span class="dot ${col.dot}"></span>
+              ${col.label}
+            </div>
+            <span class="col-count">${items.length}</span>
+          </div>
+          <div class="col-body" id="col-${col.status}">
+            ${items.length === 0 ? '<div class="col-empty">Nenhum</div>' : ''}
+          </div>
+        `;
+                board.appendChild(colEl);
+
+                const body = document.getElementById(`col-${col.status}`);
+                items.forEach(a => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+            <div class="card-name">${a.nomeCliente || 'Sem nome'}</div>
+            <div class="card-phone">${formatarPhone(a.phone)}</div>
+            <div class="card-msg">${a.ultimaMensagem || '—'}</div>
+            <div class="card-footer">
+              <span class="card-time">${formatarData(a.atualizadoEm)}</span>
+              <div class="card-actions">
+                <button class="btn-status" onclick="abrirModal(event, ${JSON.stringify(a).replace(/"/g, '&quot;')})">Detalhes</button>
+              </div>
+            </div>
+          `;
+                    body.appendChild(card);
+                });
+            });
+
+        } catch (e) {
+            board.innerHTML = '<div class="loading">Erro ao carregar. Verifique se o servidor está rodando.</div>';
+        }
+    }
+
+    function abrirModal(e, atendimento) {
+        e.stopPropagation();
+        atendimentoAtual = atendimento;
+        document.getElementById('modal-nome').textContent = atendimento.nomeCliente || 'Sem nome';
+        document.getElementById('modal-phone').textContent = formatarPhone(atendimento.phone);
+        document.getElementById('modal-msg').textContent = atendimento.ultimaMensagem || '—';
+        document.getElementById('modal-data').textContent = formatarData(atendimento.atualizadoEm);
+        document.getElementById('modal-status').value = atendimento.status;
+        document.getElementById('modal').classList.add('open');
+    }
+
+    function fecharModal() {
+        document.getElementById('modal').classList.remove('open');
+        atendimentoAtual = null;
+    }
+
+    async function salvarStatus() {
+        if (!atendimentoAtual) return;
+        const novoStatus = document.getElementById('modal-status').value;
+        try {
+            await fetch(`${API}/atendimentos/${atendimentoAtual.id}/status?status=${novoStatus}`, { method: 'PUT' });
+            fecharModal();
+            carregar();
+        } catch (e) {
+            alert('Erro ao salvar status.');
+        }
+    }
+
+    document.getElementById('modal').addEventListener('click', e => {
+        if (e.target === document.getElementById('modal')) fecharModal();
+    });
+
+    carregar();
+    setInterval(carregar, 30000);
+</script>
+</body>
+</html>
