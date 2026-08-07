@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Random;
 
 @Service
 @Slf4j
@@ -30,7 +31,6 @@ public class MessageProcessorService {
                             .criadoEm(LocalDateTime.now())
                             .build());
 
-            // detecta status pela mensagem do cliente
             StatusAtendimento novoStatus = detectarStatus(message);
             if (novoStatus != null) {
                 atendimento.setStatus(novoStatus);
@@ -40,8 +40,19 @@ public class MessageProcessorService {
             atendimento.setAtualizadoEm(LocalDateTime.now());
             atendimentoRepository.save(atendimento);
 
+            int delay = 60000 + new Random().nextInt(60000);
+            Thread.sleep(delay);
+
             String aiResponse = groqService.sendMessage(phone, message, senderName);
-            zapService.sendMessage(phone, aiResponse);
+
+            String[] partes = aiResponse.split("\\|\\|\\|");
+            for (String parte : partes) {
+                String texto = parte.trim();
+                if (!texto.isEmpty()) {
+                    zapService.sendMessage(phone, texto);
+                    Thread.sleep(3000 + new Random().nextInt(3000));
+                }
+            }
 
         } catch (Exception e) {
             log.error("Erro ao processar mensagem de {}: {}", phone, e.getMessage());
