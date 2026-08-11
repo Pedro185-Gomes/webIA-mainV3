@@ -18,10 +18,13 @@ spring:
         order_inserts: true
 
 zapi:
-  instance-id: 3F6E31ADF5528100EF225EAFFE86824A
-  token: CA53753DFDD1F222B3581141
-  client-token: F9d0dd0f8732b48c5be27a0ddf8b4c8bcS
+  instance-id: 3F6A9C718782C065C17D0ED44B503378
+  token: 64C2DB06D6025EC907A55015
+  client-token: F053876308aa34cb7b52374f73b722842S
 
 groq:
   api-key: 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
   model: llama-3.3-70b-versatile
+
+ia:
+  numeros-permitidos: " 557186511517"
