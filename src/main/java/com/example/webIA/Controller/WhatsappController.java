@@ -5,13 +5,17 @@ import com.example.webIA.Service.MessageProcessorService;
 import com.example.webIA.Service.WhisperService;
 import com.example.webIA.Service.ZapService;
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -24,6 +28,9 @@ public class WhatsappController {
     private final GroqService groqService;
     private final WhisperService whisperService;
     private final MessageProcessorService messageProcessorService;
+
+    @Value("${ia.numeros-permitidos}")
+    private String numerosPermitidosConfig;
 
     @PostMapping
     public ResponseEntity<Void> receiveMessage(@RequestBody Map<String, Object> payload) {
@@ -40,6 +47,12 @@ public class WhatsappController {
         }
 
         String phone = (String) payload.get("phone");
+
+        List<String> numerosPermitidos = Arrays.asList(numerosPermitidosConfig.split(","));
+        if (!numerosPermitidos.contains(phone)) {
+            log.info("Número {} não está na lista de permitidos. Ignorando.", phone);
+            return ResponseEntity.ok().build();
+        }
 
         Map<String, Object> text = (Map<String, Object>) payload.get("text");
         Map<String, Object> audio = (Map<String, Object>) payload.get("audio");
