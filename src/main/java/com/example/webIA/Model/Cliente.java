@@ -45,5 +45,8 @@ public class Cliente {
     private String cidade;
 
     @Column
+    private String whatsapp;
+
+    @Column
     private String estado;
 }
