@@ -24,7 +24,7 @@ zapi:
 
 groq:
   api-key: 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
-  model: llama-3.3-70b-versatile
+  model: qwen/qwen3.6-27b
 
 ia:
   numeros-permitidos: " 557186511517"
