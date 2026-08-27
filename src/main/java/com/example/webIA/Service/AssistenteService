@@ -1,0 +1,93 @@
+package com.example.webIA.Service;
+
+import com.example.webIA.Model.Conversa;
+import com.example.webIA.Repository.ConversaRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class AssistenteService {
+
+    private final ChatClient chatClient;
+    private final VectorStore vectorStore;
+    private final SupreTools supreTools;
+    private final ConversaRepository conversaRepository;
+
+    public String sendMessage(String phone, String userMessage, String senderName) {
+        try {
+            // salva mensagem do usuário
+            conversaRepository.save(Conversa.builder()
+                    .phone(phone)
+                    .role("user")
+                    .content(userMessage)
+                    .data(LocalDateTime.now())
+                    .build());
+
+            // busca histórico e aplica lógica de limpeza
+            List<Conversa> historico = conversaRepository.findByPhoneOrderByDataAsc(phone);
+
+            List<Conversa> mensagensDoCliente = historico.stream()
+                    .filter(c -> "user".equals(c.getRole()))
+                    .collect(Collectors.toList());
+
+            if (mensagensDoCliente.size() > 1) {
+                Conversa penultima = mensagensDoCliente.get(mensagensDoCliente.size() - 2);
+                LocalDateTime hoje = LocalDateTime.now().toLocalDate().atStartOfDay();
+                if (penultima.getData().isBefore(hoje)) {
+                    historico = new ArrayList<>();
+                }
+            }
+
+            if (historico.size() > 20) {
+                historico = historico.subList(historico.size() - 20, historico.size());
+            }
+
+            // converte histórico pro formato do Spring AI
+            List<Message> messages = historico.stream()
+                    .map(c -> "user".equals(c.getRole())
+                            ? (Message) new UserMessage(c.getContent())
+                            : (Message) new AssistantMessage(c.getContent()))
+                    .collect(Collectors.toList());
+
+            // chama o modelo
+            String aiResponse = chatClient.prompt()
+                    .system(s -> s.param("senderName", senderName))
+                    .messages(messages)
+                    .user(userMessage)
+                    .advisors(QuestionAnswerAdvisor.builder(vectorStore).build())
+                    .tools(supreTools)
+                    .toolContext(Map.of("phone", phone))
+                    .call()
+                    .content();
+
+            // salva resposta da IA
+            conversaRepository.save(Conversa.builder()
+                    .phone(phone)
+                    .role("assistant")
+                    .content(aiResponse)
+                    .data(LocalDateTime.now())
+                    .build());
+
+            return aiResponse;
+
+        } catch (Exception e) {
+            log.error("Erro ao processar mensagem de {}: {}", phone, e.getMessage());
+            return "Desculpe, ocorreu um erro ao processar sua mensagem.";
+        }
+    }
+}
