@@ -1,0 +1,81 @@
+package com.example.webIA.Service;
+
+import com.example.webIA.Model.Atendimento;
+import com.example.webIA.Model.Produto;
+import com.example.webIA.Model.StatusAtendimento;
+import com.example.webIA.Repository.AtendimentoRepository;
+import com.example.webIA.Repository.ProdutoRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.tool.definition.ToolContext;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class SupreToolsService {
+
+    private final AtendimentoRepository atendimentoRepository;
+    private final ProdutoRepository produtoRepository;
+
+    @Tool(description = "Atualiza o status do atendimento do cliente com base na intenção identificada na conversa. "
+            + "Use sempre que identificar mudança clara de intenção: fechar negócio, pedir orçamento, desistência ou confirmação de compra.")
+    public void atualizarStatus(
+            @ToolParam(description = "O novo status do atendimento baseado na intenção do cliente") StatusAtendimento status,
+            ToolContext toolContext) {
+
+        String phone = (String) toolContext.getContext().get("phone");
+
+        atendimentoRepository.findByPhone(phone).ifPresent(atendimento -> {
+            atendimento.setStatus(status);
+            atendimento.setAtualizadoEm(LocalDateTime.now());
+            atendimentoRepository.save(atendimento);
+            log.info("Status do atendimento {} atualizado para {}", phone, status);
+        });
+    }
+
+    @Tool(description = "Busca produtos no catálogo da Supre por termo de pesquisa. "
+            + "Use quando o cliente perguntar sobre produtos, preços, estoque ou disponibilidade. "
+            + "Retorna código, descrição, preço e estoque disponível.")
+    public String buscarProdutos(
+            @ToolParam(description = "Termo de busca, por exemplo: disco de corte, eletrodo, rebolo") String termo) {
+
+        String[] palavras = termo.split("\\s+");
+        List<Produto> todos = new java.util.ArrayList<>();
+
+        for (String palavra : palavras) {
+            if (palavra.length() < 3) continue;
+            todos.addAll(produtoRepository.buscarPorTermoComEstoque(palavra));
+        }
+
+        List<Produto> unicos = todos.stream()
+                .collect(Collectors.toMap(Produto::getId, p -> p, (a, b) -> a))
+                .values()
+                .stream()
+                .limit(10)
+                .collect(Collectors.toList());
+
+        if (unicos.isEmpty()) {
+            return "Nenhum produto encontrado para: " + termo;
+        }
+
+        StringBuilder sb = new StringBuilder("Produtos encontrados no catálogo:\n");
+        for (Produto p : unicos) {
+            String preco = (p.getPrecoVenda() == null || p.getPrecoVenda() <= 0.01)
+                    ? "Preço sob consulta"
+                    : String.format("R$ %.2f", p.getPrecoVenda());
+            String estoque = (p.getQtdAtual() == null || p.getQtdAtual() == 0)
+                    ? "Sob consulta"
+                    : p.getQtdAtual() + " unidades";
+            sb.append(String.format("- [%d] %s | %s | Estoque: %s\n",
+                    p.getId(), p.getDescricao(), preco, estoque));
+        }
+        return sb.toString();
+    }
+}
