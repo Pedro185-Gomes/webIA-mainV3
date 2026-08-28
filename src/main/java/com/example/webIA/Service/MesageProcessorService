@@ -1,0 +1,60 @@
+package com.example.webIA.Service;
+
+import com.example.webIA.Model.Atendimento;
+import com.example.webIA.Model.StatusAtendimento;
+import com.example.webIA.Repository.AtendimentoRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Random;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class MessageProcessorService {
+
+    private final AssistenteService assistenteService;
+    private final ZapService zapService;
+    private final AtendimentoRepository atendimentoRepository;
+
+    @Async
+    public void process(String phone, String message, String senderName) {
+        try {
+            // garante que o atendimento existe no banco
+            Atendimento atendimento = atendimentoRepository.findByPhone(phone)
+                    .orElse(Atendimento.builder()
+                            .phone(phone)
+                            .nomeCliente(senderName)
+                            .status(StatusAtendimento.NOVO_CONTATO)
+                            .criadoEm(LocalDateTime.now())
+                            .build());
+
+            atendimento.setUltimaMensagem(message);
+            atendimento.setAtualizadoEm(LocalDateTime.now());
+            atendimentoRepository.save(atendimento);
+
+            // delay humanizado antes de responder
+            int delay = 60000 + new Random().nextInt(60000);
+            Thread.sleep(delay);
+
+            // modelo responde e atualiza status via tool calling
+            String aiResponse = assistenteService.sendMessage(phone, message, senderName);
+
+            // envia as partes da resposta no WhatsApp
+            String[] partes = aiResponse.split("\\|\\|\\|");
+            for (String parte : partes) {
+                String texto = parte.trim();
+                if (!texto.isEmpty()) {
+                    zapService.sendMessage(phone, texto);
+                    Thread.sleep(3000 + new Random().nextInt(3000));
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Erro ao processar mensagem de {}: {}", phone, e.getMessage());
+        }
+    }
+}
