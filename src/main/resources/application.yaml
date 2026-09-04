@@ -19,8 +19,8 @@ spring:
 
 zapi:
   instance-id: 3F6A9C718782C065C17D0ED44B503378
-  token: 64C2DB06D6025EC907A55015
-  client-token: F053876308aa34cb7b52374f73b722842S
+  token: ${ZAPI_TOKEN}
+  client-token: ${ZAPI_CLIENT_TOKEN}
 
 groq:
   api-key: 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
