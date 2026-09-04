@@ -27,4 +27,4 @@ groq:
   model: qwen/qwen3.6-27b
 
 ia:
-  numeros-permitidos: " 557186511517"
+  numeros-permitidos: ${NUMEROS_PERMITIDOS}
